@@ -1,18 +1,18 @@
 /* Timetable for Bordeaux, France local transport Module */
 
 /* Magic Mirror
- * Module: MMM-Bordeaux-Traansport
+ * Module: MMM-Bordeaux-Transport
  * By Raphaël Brès && Fabien Couthouis, ENSC
  */
 
 Module.register("MMM-Bordeaux-Transports", {
   // Definition des paramètres de configuration par défaut, accessibles via this.config.nomVariable
   defaults: {
-    updateInterval: 1 * 60 * 1000, //temps de rafraichissement en ms
+    updateInterval: 1 * 1 * 1000, //temps de rafraichissement en ms, RELOAD CHAQUE SECONDE POUR L'INSTANT
     homeLatitude: 44.815051, //https://www.coordonnees-gps.fr
     homeLongitude: -0.588111,
     navitiaKey: "3cb5aaa3-2743-42f8-929c-b5f36ff64cb9",
-    navitiaPswd: "fabien47",
+    mdp: "fabien47",
     googleMapKey: "AIzaSyC1y4lpgvpsbjTxBczKKMjUamquldQR8AY",
   },
 
@@ -23,9 +23,10 @@ Module.register("MMM-Bordeaux-Transports", {
 
   // Comportement au démarrage
   start: function() {
-    Log.info("Starting module: " + this.name);
-    const self = this;
+    Log.info("Starting module: " + this.name);   
 
+
+    const self = this;
     this.sendConfig();
 
     //Rafraichissement de l'affichage et des informations
@@ -34,17 +35,33 @@ Module.register("MMM-Bordeaux-Transports", {
     }, self.config.updateInterval);
   },
 
-    //Envoie la configuration au node helper
+  //Envoie la configuration au node helper
   sendConfig: function() {
-    this.sendSocketNotification("GET_CONFIG", this.config);
+      this.sendSocketNotification("GET_CONFIG", this.config);
   },
-
 
   // Override le générateur du Dom, à changer pour l'affichage
   getDom: function() {
     const wrapper = document.createElement("div");
+    const br = document.createElement("br");
+    
 
-
+    if (typeof this.config.navitia == "undefined") {wrapper.innerHTML += "Calcul du prochain itinéraire...";}
+    else {
+      let navitiaRes = this.config.navitia;
+      for (time in navitiaRes) { //on se balade entre now, pre et nex Res;   
+        //on indique de quel moment par rapport à l'event il s'agit
+        if (time == 0) {wrapper.innerHTML += "RECOMMANDÉ"; wrapper.appendChild(br);} else if (time == 1) {wrapper.innerHTML += "PLUS TÔT"; wrapper.appendChild(br);} else if (time == 2) {wrapper.innerHTML += "PLUS TARD"; wrapper.appendChild(br);} 
+        for (etape in navitiaRes[time]) { //on se balade entre chaque étape du journey
+          wrapper.innerHTML += navitiaRes[time][etape]["nextTram"] + " à " + navitiaRes[time][etape]["nextTramTime"];
+          wrapper.appendChild(br);
+          let txtArret = "Arrêt " + navitiaRes[time][etape]["nextTramArrivalName"];
+          if (etape == navitiaRes[time].length-1) {txtArret += " à " + navitiaRes[time][etape]["nextTramArrivalTime"];} //on n'affiche l'heure de descente que si c'est le dernier arrêt
+          wrapper.innerHTML += txtArret;
+          wrapper.appendChild(br);
+        }
+      }
+    }
 
     return wrapper;
   },
@@ -57,24 +74,21 @@ Module.register("MMM-Bordeaux-Transports", {
     switch (notification) {
       case "EVENT_INFO_FORMATTED" :
         const coordinates = payload;
-        this.sendSocketNotification("FETCH_NAVITIA", "");
+        this.sendSocketNotification("FETCH_NAVITIA", coordinates);
         break;
-
       case "NAVITIA_RESULT" :
-        const navitia = payload;
-        console.log(payload)
+        this.config.navitia = payload;
         break;
     }
   },
-
-  
 
   //Gère les notifications inter-modules
   notificationReceived: function(notification, payload) {
     switch (notification) {
       case "CALENDAR_EVENTS":
+      //Exemple de traitement de la donnée events
         const event1 = payload[0];
-        this.sendSocketNotification("FORMAT_EVENT_INFO", event1);
+        this.sendSocketNotification("UPDATE_EVENT_INFO", event1);
         break;
     }
   }
