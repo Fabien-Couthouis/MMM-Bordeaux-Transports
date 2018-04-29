@@ -40,6 +40,17 @@ Module.register("MMM-Bordeaux-Transports", {
       this.sendSocketNotification("GET_CONFIG", this.config);
   },
 
+  getNextEvent(eventsList){
+    const now = Date.now();
+
+    for(let e = 0; e<eventsList.length; e++){
+      if (eventsList[e].startDate > now){
+        return eventsList[e]
+      }
+    }
+    return null;
+  },
+
   // Override le générateur du Dom, à changer pour l'affichage
   getDom: function() {
     const wrapper = document.createElement("div");
@@ -86,9 +97,13 @@ Module.register("MMM-Bordeaux-Transports", {
   notificationReceived: function(notification, payload) {
     switch (notification) {
       case "CALENDAR_EVENTS":
-      //Exemple de traitement de la donnée events
-        const event1 = payload[0];
-        this.sendSocketNotification("UPDATE_EVENT_INFO", event1);
+        const eventsList = payload;
+        //Récupération de la prochaine activité
+        const nextEvent = this.getNextEvent(eventsList);
+        if (nextEvent !== null){
+          this.sendSocketNotification("UPDATE_EVENT_INFO", nextEvent);
+        }
+        else console.log("Error : cannot get next event. Try to verify if it exists in calendar.");        
         break;
     }
   }

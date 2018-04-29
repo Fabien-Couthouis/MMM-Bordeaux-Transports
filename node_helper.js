@@ -167,9 +167,9 @@ module.exports = NodeHelper.create({
         //this.config.eventAddress = "109 Avenue Roul, Talence"; //payload["nextEventAddress"];
         //this.config.arrivalTime = "20180427T100000"; //payload["nextEventTime"];
 
-        const event1 = payload;
-        this.config.arrivalTime = this.convertTimestamp(event1.startDate);
-        this.updateGpsCoordinates(event1.location);
+        const nextEvent = payload;
+        this.config.arrivalTime = this.convertTimestamp(nextEvent.startDate);
+        this.updateGpsCoordinates(nextEvent.location);
         break;
       case "FETCH_NAVITIA":
         this.config.eventAddressGPS = payload;
