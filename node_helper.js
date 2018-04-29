@@ -35,9 +35,16 @@ module.exports = NodeHelper.create({
         //Traiter notre réponse "body", qui est le contenu de "response", on récupère ce dont on a besoin
         nowRes = JSON.parse(body);
 
-        let preURL = nowRes["links"][1]["href"];
-        let nexURL = nowRes["links"][0]["href"];
+        let preURL = ""; if (nowRes["links"][1]["type"] == "prev") {preURL = nowRes["links"][0]["href"];}
+        let nexURL = ""; if (nowRes["links"][0]["type"] == "next") {preURL = nowRes["links"][1]["href"];}
+        
         nowRes = self.etapesTransport(nowRes);
+
+        if (preURL == "") { //si on n'a pas trouvé de link "prev"
+          let payload = [nowRes];
+          self.sendSocketNotification("NAVITIA_RESULT", payload);
+          return;
+        }
 
 
         //TRANSPORT N-1
@@ -103,12 +110,13 @@ module.exports = NodeHelper.create({
       nextTrans = "Partez à pied ";
       nextTransTime = trajet["sections"][0]["departure_date_time"].substring(9, 13); nextTransTime = nextTransTime.substring(0, 2) + "h" + nextTransTime.substring(2);;
       nextTransArrivalName = "";
-      nextTransArrivalTime = "";
+      nextTransArrivalTime = "Trajet de " + Math.floor(trajet["sections"][0]["duration"]/60) + " minute(s)";
 
       etapesTransport.push({nextTrans, nextTransTime, nextTransArrivalName, nextTransArrivalTime});
       return etapesTransport;      
     }
 
+    //sinon ...
     for (num in trajet["sections"]) {
       etape = trajet["sections"][num];
 

@@ -65,11 +65,15 @@ Module.register("MMM-Bordeaux-Transports", {
         for (etape in navitiaRes[time]) { //on se balade entre chaque étape du journey
           wrapper.innerHTML += navitiaRes[time][etape]["nextTrans"] + " à " + navitiaRes[time][etape]["nextTransTime"];
           wrapper.appendChild(br);
+
+          let txtArret = "";
           if (navitiaRes[time].length != 1) {
-            let txtArret = "Arrêt " + navitiaRes[time][etape]["nextTransArrivalName"];
+            txtArret = "Arrêt " + navitiaRes[time][etape]["nextTransArrivalName"];
             if ((etape == navitiaRes[time].length-1)) {txtArret += " à " + navitiaRes[time][etape]["nextTransArrivalTime"];} //on n'affiche l'heure de descente que si c'est le dernier arrêt
-            wrapper.innerHTML += txtArret;
           }
+          else { txtArret = navitiaRes[time][etape]["nextTransArrivalTime"];}
+
+          wrapper.innerHTML += txtArret;
           wrapper.appendChild(br);
         }
       }
@@ -90,6 +94,7 @@ Module.register("MMM-Bordeaux-Transports", {
         break;
       case "NAVITIA_RESULT" :
         this.config.navitia = payload;
+        console.log(payload);
         break;
     }
   },
