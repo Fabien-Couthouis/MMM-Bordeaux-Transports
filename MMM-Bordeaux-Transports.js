@@ -56,19 +56,20 @@ Module.register("MMM-Bordeaux-Transports", {
     const wrapper = document.createElement("div");
     const br = document.createElement("br");
     
-
     if (typeof this.config.navitia == "undefined") {wrapper.innerHTML += "Calcul du prochain itinéraire...";}
-    else {
+    else {      
       let navitiaRes = this.config.navitia;
       for (time in navitiaRes) { //on se balade entre now, pre et nex Res;   
         //on indique de quel moment par rapport à l'event il s'agit
         if (time == 0) {wrapper.innerHTML += "RECOMMANDÉ"; wrapper.appendChild(br);} else if (time == 1) {wrapper.innerHTML += "PLUS TÔT"; wrapper.appendChild(br);} else if (time == 2) {wrapper.innerHTML += "PLUS TARD"; wrapper.appendChild(br);} 
         for (etape in navitiaRes[time]) { //on se balade entre chaque étape du journey
-          wrapper.innerHTML += navitiaRes[time][etape]["nextTram"] + " à " + navitiaRes[time][etape]["nextTramTime"];
+          wrapper.innerHTML += navitiaRes[time][etape]["nextTrans"] + " à " + navitiaRes[time][etape]["nextTransTime"];
           wrapper.appendChild(br);
-          let txtArret = "Arrêt " + navitiaRes[time][etape]["nextTramArrivalName"];
-          if (etape == navitiaRes[time].length-1) {txtArret += " à " + navitiaRes[time][etape]["nextTramArrivalTime"];} //on n'affiche l'heure de descente que si c'est le dernier arrêt
-          wrapper.innerHTML += txtArret;
+          if (navitiaRes[time].length != 1) {
+            let txtArret = "Arrêt " + navitiaRes[time][etape]["nextTransArrivalName"];
+            if ((etape == navitiaRes[time].length-1)) {txtArret += " à " + navitiaRes[time][etape]["nextTransArrivalTime"];} //on n'affiche l'heure de descente que si c'est le dernier arrêt
+            wrapper.innerHTML += txtArret;
+          }
           wrapper.appendChild(br);
         }
       }

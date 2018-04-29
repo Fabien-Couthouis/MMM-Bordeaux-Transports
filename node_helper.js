@@ -82,7 +82,7 @@ module.exports = NodeHelper.create({
   etapesTransport: function(resultat) {
 
     let trajet;
-    //on sélectionne le plus rapide par défaut
+    //on sélectionne le plus rapide par défaut, à modifier selon besoin
     for (num in resultat["journeys"]) {
       if (resultat["journeys"][num]["type"] == "rapid") {
         trajet = resultat["journeys"][num];
@@ -94,22 +94,32 @@ module.exports = NodeHelper.create({
 
 
 
-    let nextTramTime; let nextTramArrivalName; let nextTram;
+    let nextTransTime; let nextTransArrivalName; let nextTrans;
     let ligneName; let etape;
 
     let etapesTransport = [];
+
+    if (trajet["sections"].length == 1) { //si un une seule étape dans le journey, donc très probablement de la marche proposée
+      nextTrans = "Partez à pied ";
+      nextTransTime = trajet["sections"][0]["departure_date_time"].substring(9, 13); nextTransTime = nextTransTime.substring(0, 2) + "h" + nextTransTime.substring(2);;
+      nextTransArrivalName = "";
+      nextTransArrivalTime = "";
+
+      etapesTransport.push({nextTrans, nextTransTime, nextTransArrivalName, nextTransArrivalTime});
+      return etapesTransport;      
+    }
 
     for (num in trajet["sections"]) {
       etape = trajet["sections"][num];
 
       if (etape["type"] == "public_transport") {
 
-        nextTram = etape["display_informations"]["name"] + " - " + etape["from"]["stop_point"]["name"] + " (> " + etape["display_informations"]["headsign"] + ")";
-        nextTramTime = etape["departure_date_time"].substring(9, 13); nextTramTime = nextTramTime.substring(0, 2) + "h" + nextTramTime.substring(2);
-        nextTramArrivalName = etape["to"]["stop_point"]["name"];
-        nextTramArrivalTime = etape["arrival_date_time"].substring(9, 13); nextTramArrivalTime = nextTramArrivalTime.substring(0, 2) + "h" + nextTramArrivalTime.substring(2);
+        nextTrans = etape["display_informations"]["name"] + " - " + etape["from"]["stop_point"]["name"] + " (> " + etape["display_informations"]["headsign"] + ")";
+        nextTransTime = etape["departure_date_time"].substring(9, 13); nextTransTime = nextTransTime.substring(0, 2) + "h" + nextTransTime.substring(2);
+        nextTransArrivalName = etape["to"]["stop_point"]["name"];
+        nextTransArrivalTime = etape["arrival_date_time"].substring(9, 13); nextTransArrivalTime = nextTransArrivalTime.substring(0, 2) + "h" + nextTransArrivalTime.substring(2);
 
-        etapesTransport.push({nextTram, nextTramTime, nextTramArrivalName, nextTramArrivalTime});
+        etapesTransport.push({nextTrans, nextTransTime, nextTransArrivalName, nextTransArrivalTime});
       }
     }
 
