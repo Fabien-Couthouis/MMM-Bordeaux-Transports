@@ -36,8 +36,7 @@ module.exports = NodeHelper.create({
         nowRes = JSON.parse(body);
 
         let preURL = ""; if (nowRes["links"][1]["type"] == "prev") {preURL = nowRes["links"][0]["href"];}
-        let nexURL = ""; if (nowRes["links"][0]["type"] == "next") {preURL = nowRes["links"][1]["href"];}
-        
+        let nexURL = ""; if (nowRes["links"][0]["type"] == "next") {nexURL = nowRes["links"][1]["href"];}
         nowRes = self.etapesTransport(nowRes);
 
         if (preURL == "") { //si on n'a pas trouvé de link "prev"
