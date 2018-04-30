@@ -1,4 +1,4 @@
-.bdxTram {
+.bdxTransp {
   font-size: 75%;
   line-height: 65px;
   margin-left: 30px;
@@ -7,32 +7,27 @@
   -webkit-transform: translate(0, -3px); /* Safari */
   transform: translate(0, -3px);
 }
-
-.bdxTram table {
-    width: 400px;
-}
-
-.bdxTram .red {
-    color: #FF0000
-}
-
-.bdxTram .mode-icon {
-  color: #FF0000;
-  width: 24px;
-  height: 24px;
+.journeyIcon{
+  width: 48px;
+  height: 48px;
+  color: white;
   display: block;
 }
 
-.iconText{
-  font-size:15px;
-  /* padding:5px 0 10px 0; */
-  display:block;
-  
-}
-.fa{
-  margin-top: -10px;
+td{
+  text-align: center;
 }
 
-div{
-  font-size: 15px;
+figcaption {
+  text-align: center;
+}
+
+figure {
+  display:inline-block;
+}
+
+.line {
+  font-size: 12px;
+  font-style: italic;
+  display:inline-block;
 }

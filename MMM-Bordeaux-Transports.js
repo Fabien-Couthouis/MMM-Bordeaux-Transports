@@ -8,7 +8,7 @@
 Module.register("MMM-Bordeaux-Transports", {
   // Definition des paramètres de configuration par défaut, accessibles via this.config.nomVariable
   defaults: {
-    updateInterval: 1 * 1 * 1000, //temps de rafraichissement en ms, RELOAD CHAQUE SECONDE POUR L'INSTANT
+    updateInterval: 1 * 3 * 1000, //temps de rafraichissement en ms, RELOAD CHAQUE SECONDE POUR L'INSTANT
     homeLatitude: 44.815051, //https://www.coordonnees-gps.fr
     homeLongitude: -0.588111,
     navitiaKey: "3cb5aaa3-2743-42f8-929c-b5f36ff64cb9",
@@ -25,8 +25,9 @@ Module.register("MMM-Bordeaux-Transports", {
   start: function() {
     Log.info("Starting module: " + this.name);   
 
-
     const self = this;
+    this.journeys = [];
+
     this.sendConfig();
 
     //Rafraichissement de l'affichage et des informations
@@ -37,7 +38,7 @@ Module.register("MMM-Bordeaux-Transports", {
 
   //Envoie la configuration au node helper
   sendConfig: function() {
-      this.sendSocketNotification("GET_CONFIG", this.config);
+      this.sendSocketNotification("CONFIG", this.config);
   },
 
   getNextEvent(eventsList){
@@ -54,30 +55,58 @@ Module.register("MMM-Bordeaux-Transports", {
   // Override le générateur du Dom, à changer pour l'affichage
   getDom: function() {
     const wrapper = document.createElement("div");
-    const br = document.createElement("br");
-    
-    if (typeof this.config.navitia == "undefined") {wrapper.innerHTML += "Calcul du prochain itinéraire...";}
-    else {      
-      let navitiaRes = this.config.navitia;
-      for (time in navitiaRes) { //on se balade entre now, pre et nex Res;   
-        //on indique de quel moment par rapport à l'event il s'agit
-        if (time == 0) {wrapper.innerHTML += "RECOMMANDÉ"; wrapper.appendChild(br);} else if (time == 1) {wrapper.innerHTML += "PLUS TÔT"; wrapper.appendChild(br);} else if (time == 2) {wrapper.innerHTML += "PLUS TARD"; wrapper.appendChild(br);} 
-        for (etape in navitiaRes[time]) { //on se balade entre chaque étape du journey
-          wrapper.innerHTML += navitiaRes[time][etape]["nextTrans"] + " à " + navitiaRes[time][etape]["nextTransTime"];
-          wrapper.appendChild(br);
+    //VOIR CONSOLE POUR VOIR LES INFOS
+    console.log(this.journeys)
 
-          let txtArret = "";
-          if (navitiaRes[time].length != 1) {
-            txtArret = "Arrêt " + navitiaRes[time][etape]["nextTransArrivalName"];
-            if ((etape == navitiaRes[time].length-1)) {txtArret += " à " + navitiaRes[time][etape]["nextTransArrivalTime"];} //on n'affiche l'heure de descente que si c'est le dernier arrêt
-          }
-          else { txtArret = navitiaRes[time][etape]["nextTransArrivalTime"];}
+    if (typeof this.nextEventLocation === "undefined" || typeof this.journeys[0] === "undefined") {
+      wrapper.innerHTML += "Calcul du prochain itinéraire...";
 
-          wrapper.innerHTML += txtArret;
-          wrapper.appendChild(br);
+    }else { 
+      const title = document.createElement("span");
+      title.textContent = "Itinéraire vers " + this.nextEventLocation;
+      wrapper.appendChild(title);
+      const br = document.createElement("br");
+
+      const hr = document.createElement("hr");
+      wrapper.appendChild(hr);
+
+      const table = document.createElement("table");
+      
+
+      const arrow = document.createElement("img");
+      arrow.src = "./modules/MMM-Bordeaux-Transports/icons/arrow.png";
+      arrow.classList = "journeyIcon";
+
+
+      for(let j=0; j < this.journeys.length; j++){
+        const iconsLine = document.createElement("tr");
+        const info1Line = document.createElement("tr");
+        const info2Line = document.createElement("tr");
+
+        for(let s=0; s < this.journeys[j].length; s++ ){
+          const section = this.journeys[j][s];
+          const icon = document.createElement("td");
+          icon.innerHTML = '<img class="journeyIcon" src="./modules/MMM-Bordeaux-Transports/icons/' + section.mode + '.png"></img>';;
+          iconsLine.appendChild(icon);
+
+          
+
+          if (s !== this.journeys[j].length - 1)
+            iconsLine.appendChild(arrow.cloneNode());
         }
+
+      
+
+      table.appendChild(iconsLine);
+      table.appendChild(info1Line);
+      table.appendChild(info2Line);
       }
+      wrapper.appendChild(table);
     }
+
+    
+    
+
 
     return wrapper;
   },
@@ -92,9 +121,14 @@ Module.register("MMM-Bordeaux-Transports", {
         const coordinates = payload;
         this.sendSocketNotification("FETCH_NAVITIA", coordinates);
         break;
-      case "NAVITIA_RESULT" :
-        this.config.navitia = payload;
-        console.log(payload);
+      case "NAVITIA_RESULT_PREV" :
+        this.journeys[0] = payload;
+        break;
+      case "NAVITIA_RESULT_NOW" :
+        this.journeys[1] = payload;
+        break;
+      case "NAVITIA_RESULT_NEXT" :
+        this.journeys[2] = payload;
         break;
     }
   },
@@ -107,6 +141,11 @@ Module.register("MMM-Bordeaux-Transports", {
         //Récupération de la prochaine activité
         const nextEvent = this.getNextEvent(eventsList);
         if (nextEvent !== null){
+          //Nom du lieu de l'événement stocké dans this.nextEventLocation. On ne prend que la première partie de l'adresse (nom du lieu)
+          if (nextEvent.location.includes(',')){
+            this.nextEventLocation = nextEvent.location.substr(0, nextEvent.location.indexOf(',')); 
+          }else this.nextEventLocation = nextEvent.location;
+
           this.sendSocketNotification("UPDATE_EVENT_INFO", nextEvent);
         }
         else console.log("Error : cannot get next event. Try to verify if it exists in calendar.");        
