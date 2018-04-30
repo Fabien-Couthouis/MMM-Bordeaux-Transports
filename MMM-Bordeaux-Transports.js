@@ -45,9 +45,10 @@ Module.register("MMM-Bordeaux-Transports", {
   getNextEvent(eventsList){
     const now = Date.now();
     const margin = 15 * 60 * 1000;
+    
 
     for(let e = 0; e<eventsList.length; e++){
-      if (eventsList[e].startDate + margin > now ){
+      if (eventsList[e].startDate > now - margin){
         return eventsList[e]
       }
     }
