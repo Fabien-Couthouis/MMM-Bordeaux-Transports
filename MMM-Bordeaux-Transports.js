@@ -26,7 +26,7 @@ Module.register("MMM-Bordeaux-Transports", {
     Log.info("Starting module: " + this.name);   
 
     const self = this;
-    this.journeys = [];
+    this.journey = [new Object, new Object, new Object];
 
     this.sendConfig();
 
@@ -55,10 +55,8 @@ Module.register("MMM-Bordeaux-Transports", {
   // Override le générateur du Dom, à changer pour l'affichage
   getDom: function() {
     const wrapper = document.createElement("div");
-    //VOIR CONSOLE POUR VOIR LES INFOS
-    console.log(this.journeys)
 
-    if (typeof this.nextEventLocation === "undefined" || typeof this.journeys[0] === "undefined") {
+    if (typeof this.nextEventLocation === "undefined" || typeof this.journey[1].sections === "undefined") {
       wrapper.innerHTML += "Calcul du prochain itinéraire...";
 
     }else { 
@@ -66,33 +64,50 @@ Module.register("MMM-Bordeaux-Transports", {
       title.textContent = "Itinéraire vers " + this.nextEventLocation;
       wrapper.appendChild(title);
       const br = document.createElement("br");
+      const journeys = document.createElement("div");
 
       const hr = document.createElement("hr");
       wrapper.appendChild(hr);
 
       const table = document.createElement("table");
-      
 
       const arrow = document.createElement("img");
       arrow.src = "./modules/MMM-Bordeaux-Transports/icons/arrow.png";
       arrow.classList = "journeyIcon";
 
-
-      for(let j=0; j < this.journeys.length; j++){
+      for(let j=0; j < this.journey.length; j++){
+        console.log("journey " + j)
         const iconsLine = document.createElement("tr");
         const info1Line = document.createElement("tr");
         const info2Line = document.createElement("tr");
 
-        for(let s=0; s < this.journeys[j].length; s++ ){
-          const section = this.journeys[j][s];
+        for(let s=0; s < this.journey[j].sections.length; s++ ){
+          console.log("section  " + s)
+          const section = this.journey[j].sections[s];
+
           const icon = document.createElement("td");
-          icon.innerHTML = '<img class="journeyIcon" src="./modules/MMM-Bordeaux-Transports/icons/' + section.mode + '.png"></img>';;
+          icon.innerHTML = '<img class="journeyIcon" src="./modules/MMM-Bordeaux-Transports/icons/' + section.icon + '.png"></img>';;
           iconsLine.appendChild(icon);
+
+          const info1 = document.createElement("td")
+          info1.textContent = section.info1;
+          info1.classList = "info2";
+          info1Line.appendChild(info1);
+
+          const info2 = document.createElement("td")
+          info2.textContent = section.info2;
+          info2.classList = "info2";
+          info2Line.appendChild(info2);
+
 
           
 
-          if (s !== this.journeys[j].length - 1)
+          if (s !== this.journey[j].sections.length - 1){
+            emptyTd = document.createElement("td");
             iconsLine.appendChild(arrow.cloneNode());
+            info1Line.appendChild(emptyTd.cloneNode());
+            info2Line.appendChild(emptyTd.cloneNode());
+          }
         }
 
       
@@ -101,13 +116,9 @@ Module.register("MMM-Bordeaux-Transports", {
       table.appendChild(info1Line);
       table.appendChild(info2Line);
       }
-      wrapper.appendChild(table);
+      journeys.appendChild(table);
+      wrapper.appendChild(journeys);
     }
-
-    
-    
-
-
     return wrapper;
   },
 
@@ -122,13 +133,13 @@ Module.register("MMM-Bordeaux-Transports", {
         this.sendSocketNotification("FETCH_NAVITIA", coordinates);
         break;
       case "NAVITIA_RESULT_PREV" :
-        this.journeys[0] = payload;
+        this.journey[0].sections = payload;
         break;
       case "NAVITIA_RESULT_NOW" :
-        this.journeys[1] = payload;
+        this.journey[1].sections = payload;
         break;
       case "NAVITIA_RESULT_NEXT" :
-        this.journeys[2] = payload;
+        this.journey[2].sections = payload;
         break;
     }
   },

@@ -24,22 +24,23 @@ module.exports = NodeHelper.create({
 
       } else {
         //Traiter notre réponse "body", qui est le contenu de "response", on récupère ce dont on a besoin
-        journey = JSON.parse(body);
+        json = JSON.parse(body);
+        //console.log(body) //http://jsonviewer.stack.hu pour voir le fichier sous un format agréable et lisible
 
         //Effectue les requêtes pour les "journeys" précédents et suivants, s'ils existent
         if (moment === "NOW"){
-          if (journey["links"][0]["type"] == "next") {
-            nextURL = journey["links"][0]["href"];
+          if (json["links"][0]["type"] === "next") {
+            nextURL = json["links"][0]["href"];
             self.fetchNavitia(nextURL, "NEXT");
           }
 
-          if (journey["links"][1]["type"] == "prev") {
-            prevURL = journey["links"][1]["href"];
-            self.fetchNavitia(nextURL, "PREV");
+          if (json["links"][1]["type"] === "prev") {
+            prevURL = json["links"][1]["href"];
+            self.fetchNavitia(prevURL, "PREV");
           }          
         }
 
-        self.sendSocketNotification("NAVITIA_RESULT_" + moment, self.getSteps(journey));
+        self.sendSocketNotification("NAVITIA_RESULT_" + moment, self.getSections(json));
       }
     });
   },
@@ -52,63 +53,63 @@ module.exports = NodeHelper.create({
     this.fetchNavitia(nowUrl);
   },
 
-  getSteps: function(journey) {
-    let path;
-    //on sélectionne le plus rapide par défaut, à modifier selon besoin
-    for (num in journey["journeys"]) {
-      if (journey["journeys"][num]["type"] == "rapid") {
-        path = journey["journeys"][num];
+  getSections: function(json) {
+    //on sélectionne le voyage le plus rapide par défaut. Si on ne trouve pas de plus rapide, on prend le premier
+    let journeyIndex = 0;
+    let j = 0;
+    do {
+      if (json["journeys"][j]["type"] == "rapid" || json["journeys"][j]["type"] == "fastest") {
+        journeyIndex = j;
       }
-    }
-    if (typeof path == "undefined") {
-      //si on n'a pas trouvé de "rapid", on récup le premier journey proposé
-      path = journey["journeys"][0];
-    }
+      j++;
+    } while (journeyIndex === 0 && j < json["journeys"].length)
 
-    let steps = [];
+    let journey= json["journeys"][journeyIndex];
+    
+    //Ce qu'on va retourner. Contient toutes les sections du voyage intéressantes pour l'affichage, avec les informations utiles
+    let sections = [];
 
-    if (path["sections"].length == 1) {
-      //si un une seule étape dans le journey, donc très probablement de la marche proposée
-      let section = path["sections"][num];
-      const step = {
-        mode: "walking",
-        nextTransTime: section["departure_date_time"].substring(9, 11) + "h" + section["departure_date_time"].substring(11,13),
-        arrival: section["to"]["stop_point"]["name"],
-        arrivalTime: Math.floor(path["sections"][0]["duration"] / 60),
+    //Informations de départ
+    {
+      let section = journey["sections"][0];
+      const sectionInfo = {
+        icon: section.mode.toLowerCase(),
+        info1: "Départ",
+        info2: section["departure_date_time"].substring(9, 11) + "h" + section["departure_date_time"].substring(11,13),
       };
-
-      steps.push(step);
-      return steps;
+      sections.push(sectionInfo);
     }
+    
 
-    //sinon ...
-    for (num in path["sections"]) {
-      let section = path["sections"][num];
-      let step;
+    //On ajoute les correspondances à "sections"
+    for (let s = 1; s < journey["sections"].length - 1; s++) {
+      let section = journey["sections"][s];
+
       if (section["type"] == "public_transport") {
-        step = {
-          mode: section["display_informations"]["physical_mode"],
+        let sectionInfo = {
+          icon: section["display_informations"]["physical_mode"].toLowerCase(),
           line: section["display_informations"]["name"],
-          departure: section["from"]["stop_point"]["name"],
-          terminus: section["display_informations"]["headsign"],
-          nextTransTime: section["departure_date_time"].substring(9, 11) + "h" + section["departure_date_time"].substring(11,13),
-          arrival: section["to"]["stop_point"]["name"],
-          arrivalTime: section["arrival_date_time"].substring(9, 11) + "h" + section["arrival_date_time"].substring(11,13),
+          info1: section["from"]["stop_point"]["name"],
+          info2: "(" + section["display_informations"]["name"] + " > " + section["display_informations"]["headsign"] +")",
         };
-
-      }else{
-        step = {
-          mode: "walking" ,
-          //... A COMPLETER ICI
-        };
-
-      }
-
-      steps.push(step);
-      
+        sections.push(sectionInfo);
+      }      
     }
 
-    return steps;
+    //Informations de fin 
+    {
+      let lastIndex = journey["sections"].length - 1;
+      let section = journey["sections"][lastIndex];
+      const sectionInfo = {
+        icon: "arrival",
+        info1: this.nextEventLocation, //section["to"]["name"],
+        info2: section["arrival_date_time"].substring(9, 11) + "h" + section["departure_date_time"].substring(11,13),
+      };
+      sections.push(sectionInfo);
+    }
+    
+
+    return sections;
   },
 
   //Permet de convertir un horaire format timestamp donné par le calendrier Google en un format yyyymmddThhmmss
@@ -162,6 +163,7 @@ module.exports = NodeHelper.create({
       case "UPDATE_EVENT_INFO":
         const nextEvent = payload;
         this.config.arrivalTime = this.convertTimestamp(nextEvent.startDate);
+        this.nextEventLocation = nextEvent.location.substr(0, nextEvent.location.indexOf(',')); 
         this.updateGpsCoordinates(nextEvent.location);
         break;
       case "FETCH_NAVITIA":

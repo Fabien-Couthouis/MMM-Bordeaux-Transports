@@ -8,26 +8,27 @@
   transform: translate(0, -3px);
 }
 .journeyIcon{
-  width: 48px;
-  height: 48px;
+  width: 24px;
+  height: 24px;
   color: white;
-  display: block;
 }
 
 td{
   text-align: center;
+  line-height: 95%;
 }
 
-figcaption {
-  text-align: center;
-}
+/* tr{
+  line-height: 100%;
+} */
 
-figure {
-  display:inline-block;
+.info1, .info2{
+  font-size: 40%;
+  /* text-align: center; */
 }
 
 .line {
-  font-size: 12px;
+  font-size: 50%;
   font-style: italic;
   display:inline-block;
 }
