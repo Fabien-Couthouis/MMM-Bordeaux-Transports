@@ -41,11 +41,13 @@ Module.register("MMM-Bordeaux-Transports", {
       this.sendSocketNotification("CONFIG", this.config);
   },
 
+  //Retourne le prochain événement de la liste, avec une marge de 15 minutes  (s'il a commencé depuis 10min, on le retourne quand meme)
   getNextEvent(eventsList){
     const now = Date.now();
+    const margin = 15 * 60 * 1000;
 
     for(let e = 0; e<eventsList.length; e++){
-      if (eventsList[e].startDate > now){
+      if (eventsList[e].startDate + margin > now ){
         return eventsList[e]
       }
     }
@@ -76,13 +78,11 @@ Module.register("MMM-Bordeaux-Transports", {
       arrow.classList = "journeyIcon";
 
       for(let j=0; j < this.journey.length; j++){
-        console.log("journey " + j)
         const iconsLine = document.createElement("tr");
         const info1Line = document.createElement("tr");
         const info2Line = document.createElement("tr");
 
         for(let s=0; s < this.journey[j].sections.length; s++ ){
-          console.log("section  " + s)
           const section = this.journey[j].sections[s];
 
           const icon = document.createElement("td");
